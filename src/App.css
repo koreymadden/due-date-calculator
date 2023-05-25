@@ -7,3 +7,19 @@
 	text-align: center;
 	flex-direction: column;
 }
+
+.error {
+	font-size: 18px;
+	margin-top: 20px;
+}
+
+.error::before {
+	content: '[Error]: ';
+	color: darkred;
+}
+
+.due-date {
+	font-size: 18px;
+	margin-top: 20px;
+	text-decoration: underline;
+}

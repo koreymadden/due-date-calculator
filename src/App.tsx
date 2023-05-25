@@ -1,11 +1,17 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import Holidays from 'date-holidays';
 import './App.css';
 import Clock from './components/Clock';
 
 function App() {
+	const [currentDueDate, setCurrentDueDate] = useState<Date>();
+	const [timeError, setTimeError] = useState(false);
+	const [weekdayError, setWeekdayError] = useState(false);
+	const [holidayError, setHolidayError] = useState(false);
+
 	useEffect(() => {
-		calculateDueDate(new Date('May 24, 2023 13:15:05'), 21);
-		// calculateDueDate(new Date(), 17);
+		console.warn(calculateDueDate(new Date('May 24, 2023 13:15:05'), 21));
+		// console.warn(calculateDueDate(new Date(), 17));
 	}, []);
 
 	const calculateDueDate = (
@@ -13,16 +19,27 @@ function App() {
 		turnAroundHours: number
 	) => {
 		// tickets can only be reported between 9AM to 5PM
-		console.log('isTimeValid:', isTimeValid(submitDate));
+		const validSubmitTime = isTimeValid(submitDate);
+
 		// tickets can only be reported between monday and friday
-		console.log('isWeekdayValid:', isWeekdayValid(submitDate));
+		const validWeekDay = isWeekdayValid(submitDate);
+
 		// tickets cannot be reported on holidays
-		console.log('isHoliday:', isHoliday(submitDate));
-		// determine due date
-		console.warn(
-			'determineDueDate:',
-			determineDueDate(submitDate, turnAroundHours)
-		);
+		const validNonHoliday = isNotHoliday(submitDate);
+
+		if (validSubmitTime && validWeekDay && validNonHoliday) {
+			resetErrors();
+			const dueDate = determineDueDate(submitDate, turnAroundHours);
+			setCurrentDueDate(dueDate);
+			return dueDate;
+		} else {
+			setTimeError(!validSubmitTime);
+			setWeekdayError(!validWeekDay);
+			setHolidayError(!validNonHoliday);
+			return new Error(
+				'[INVALID SUBMIT DATE]: You can only submit an issue between 9AM - 5PM, Monday to Friday, and not on holidays.'
+			);
+		}
 	};
 
 	const isTimeValid = (submitDate: Date) => {
@@ -40,80 +57,95 @@ function App() {
 		return day >= 1 && day <= 5;
 	};
 
-	const isHoliday = (submitDate: Date) => {
-		return false;
+	const isNotHoliday = (submitDate: Date) => {
+		const unitedStatesHolidays = new Holidays('US');
+		return !unitedStatesHolidays.isHoliday(submitDate);
 	};
 
 	const determineDueDate = (submitDate: Date, turnAroundHours: number) => {
+		const DAY_IN_MS = 86400000;
+		const HOUR_IN_MS = 3600000;
 		const additionalDays = Math.floor(turnAroundHours / 8);
 		const additionalHours = turnAroundHours % 8;
 
-		return changeDate(submitDate, additionalDays, additionalHours);
-	};
-
-	const changeDate = (
-		submitDate: Date,
-		additionalDays: number,
-		additionalHours: number
-	) => {
-		const DAY_IN_MS = 86400000;
-		const HOUR_IN_MS = 3600000;
-
-		// ms since 1970
-		let dueDate = submitDate.getTime();
+		// time in ms since jan 1, 1970
+		const submitDateTime = submitDate.getTime();
 
 		// time in ms that need is needed to get job done
-		const timeToAdd = additionalDays * DAY_IN_MS;
-		const moreTimeToAdd = additionalHours * HOUR_IN_MS;
+		const timeNeeded =
+			additionalDays * DAY_IN_MS + additionalHours * HOUR_IN_MS;
 
-		// add ms to the submitted time from days that need to be added
-		dueDate = dueDate + timeToAdd + moreTimeToAdd;
+		// add the turnaround time that is needed to the submitted date's time to get the due date
+		let dueDate = submitDateTime + timeNeeded;
 
+		// validate due date to make sure the new date is not on a holiday, not a weekend, and not a holiday
 		while (
-			isHoliday(new Date(dueDate)) ||
+			!isNotHoliday(new Date(dueDate)) ||
 			!isWeekdayValid(new Date(dueDate)) ||
 			!isTimeValid(new Date(dueDate))
 		) {
-			// determine if the day of the week is valid from the added ms
 			while (
 				!isWeekdayValid(new Date(dueDate)) ||
-				isHoliday(new Date(dueDate))
+				!isNotHoliday(new Date(dueDate))
 			) {
-				console.debug('DAY OF WEEK IS NOT VALID');
+				// the current date is either on the weekend or a holiday so we need to change the date by one day
 				dueDate = dueDate + DAY_IN_MS;
 			}
 
-			// determine if the new time is before 9AM or after 5PM
 			while (!isTimeValid(new Date(dueDate))) {
-				console.debug('TIME IS NOT VALID');
-				// create date object at the same time but the next day
-				const timeSince9ToAdd = getTimePassedSince5PM(new Date(dueDate));
-				let newDate = new Date(dueDate + DAY_IN_MS);
+				// the time is not between 9AM and 5PM so we need to change the day and add the remaining time to the start of the workday
+				const timePassedSinceWorkday = getTimePassedSinceWorkday(
+					new Date(dueDate)
+				);
+				const newDate = new Date(dueDate + DAY_IN_MS);
 				newDate.setHours(9, 0, 0, 0);
-				const finalDate = new Date(newDate.getTime() + timeSince9ToAdd);
-				dueDate = finalDate.getTime();
+				const endDate = new Date(newDate.getTime() + timePassedSinceWorkday);
+				dueDate = endDate.getTime();
 			}
 		}
+
 		return new Date(dueDate);
 	};
 
-	function getTimePassedSince5PM(date: Date) {
+	function getTimePassedSinceWorkday(date: Date) {
 		const targetDate = new Date(date);
 		targetDate.setHours(17, 0, 0, 0);
-
 		if (targetDate.getTime() > date.getTime()) {
 			targetDate.setDate(targetDate.getDate() - 1);
 		}
-
 		const timeSince5 = date.getTime() - targetDate.getTime();
-
 		return timeSince5;
 	}
+
+	const resetErrors = () => {
+		setTimeError(false);
+		setWeekdayError(false);
+		setHolidayError(false);
+	};
 
 	return (
 		<div className='App'>
 			<div>This project does not interact with the user interface.</div>
 			<Clock />
+			{currentDueDate && (
+				<div className='due-date'>
+					Due Date: {currentDueDate.toDateString()} at{' '}
+					{currentDueDate.toLocaleTimeString()}
+				</div>
+			)}
+			{timeError && (
+				<div className='error'>
+					You can only submit an issue between 9AM and 5PM.
+				</div>
+			)}
+			{weekdayError && (
+				<div className='error'>
+					You can only submit an issue on Monday to Friday.
+				</div>
+			)}
+			{holidayError && (
+				<div className='error'>You cannot submit an issue on a US holiday.</div>
+			)}
 		</div>
 	);
 }
