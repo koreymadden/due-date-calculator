@@ -18,18 +18,21 @@ function App() {
 		submitDate: Date = new Date(),
 		turnAroundHours: number
 	) => {
+		// convert submitted date to eastern time zone
+		const timeZoneDate = convertToTimeZone(submitDate);
+
 		// tickets can only be reported between 9AM to 5PM
-		const validSubmitTime = isTimeValid(submitDate);
+		const validSubmitTime = isTimeValid(timeZoneDate);
 
 		// tickets can only be reported between monday and friday
-		const validWeekDay = isWeekdayValid(submitDate);
+		const validWeekDay = isWeekdayValid(timeZoneDate);
 
 		// tickets cannot be reported on holidays
-		const validNonHoliday = isNotHoliday(submitDate);
+		const validNonHoliday = isNotHoliday(timeZoneDate);
 
 		if (validSubmitTime && validWeekDay && validNonHoliday) {
 			resetErrors();
-			const dueDate = determineDueDate(submitDate, turnAroundHours);
+			const dueDate = determineDueDate(timeZoneDate, turnAroundHours);
 			setCurrentDueDate(dueDate);
 			return dueDate;
 		} else {
@@ -101,6 +104,12 @@ function App() {
 		}
 
 		return true;
+	};
+
+	const convertToTimeZone = (submitDate: Date) => {
+		const options = { timeZone: 'America/New_York' };
+		const estDateTime = submitDate.toLocaleString('en-US', options);
+		return new Date(estDateTime);
 	};
 
 	const determineDueDate = (submitDate: Date, turnAroundHours: number) => {
@@ -176,7 +185,7 @@ function App() {
 			)}
 			{timeError && (
 				<div className='error'>
-					You can only submit an issue between 9AM and 5PM.
+					You can only submit an issue between 9AM and 5PM (EST).
 				</div>
 			)}
 			{weekdayError && (
