@@ -10,8 +10,11 @@ function App() {
 	const [holidayError, setHolidayError] = useState(false);
 
 	useEffect(() => {
-		console.warn(calculateDueDate(new Date('May 24, 2023 13:15:05'), 21));
-		// console.warn(calculateDueDate(new Date(), 17));
+		// for testing and using the application you can adjust the date below to desired date and time
+		console.warn(
+			'Due Date:',
+			calculateDueDate(new Date('May 24, 2023 9:15:05'), 8)
+		);
 	}, []);
 
 	const calculateDueDate = (
