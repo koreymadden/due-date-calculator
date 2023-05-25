@@ -58,8 +58,49 @@ function App() {
 	};
 
 	const isNotHoliday = (submitDate: Date) => {
-		const unitedStatesHolidays = new Holidays('US');
-		return !unitedStatesHolidays.isHoliday(submitDate);
+		// const unitedStatesHolidays = new Holidays('US');
+		// return !unitedStatesHolidays.isHoliday(submitDate);
+
+		// month 0 - 11
+		const month = submitDate.getMonth();
+
+		// day 1 - 31
+		const day = submitDate.getDate();
+
+		// day of week 0 - 6
+		const dayOfWeek = submitDate.getDay();
+
+		// memorial day
+		if (month === 4 && day >= 25 && dayOfWeek === 1) {
+			return false;
+		}
+
+		// independence day
+		if (month === 6 && day === 4) {
+			return false;
+		}
+
+		// labor day
+		if (month === 8 && day <= 7 && dayOfWeek === 1) {
+			return false;
+		}
+
+		// thanksgiving
+		if (month === 10 && dayOfWeek === 4 && Math.floor((day - 1) / 7) === 3) {
+			return false;
+		}
+
+		// christmas
+		if (month === 11 && day === 25) {
+			return false;
+		}
+
+		// new years
+		if (month === 0 && day === 1) {
+			return false;
+		}
+
+		return true;
 	};
 
 	const determineDueDate = (submitDate: Date, turnAroundHours: number) => {
