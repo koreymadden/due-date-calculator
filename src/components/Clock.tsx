@@ -5,7 +5,9 @@ const Clock = () => {
 
 	useEffect(() => {
 		const timer = setInterval(() => {
-			setTime(new Date());
+			const options = { timeZone: 'America/New_York' };
+			const estTime = new Date().toLocaleString('en-US', options);
+			setTime(new Date(estTime));
 		}, 1000);
 
 		return () => {
