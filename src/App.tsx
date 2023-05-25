@@ -144,7 +144,9 @@ function App() {
 				</div>
 			)}
 			{holidayError && (
-				<div className='error'>You cannot submit an issue on a US holiday.</div>
+				<div className='error'>
+					You cannot submit an issue on a U.S. Federal Holiday.
+				</div>
 			)}
 		</div>
 	);
