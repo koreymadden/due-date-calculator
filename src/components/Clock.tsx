@@ -14,7 +14,7 @@ const Clock = () => {
 			clearInterval(timer);
 		};
 	}, []);
-	return <div>{time.toLocaleTimeString()}</div>;
+	return <div>{`${time.toLocaleTimeString()} (EST)`}</div>;
 };
 
 export default Clock;

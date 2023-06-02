@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import Holidays from 'date-holidays';
 import './App.css';
 import Clock from './components/Clock';
+import Divider from './components/Divider';
+import Dropdown from './components/Dropdown';
 
 function App() {
 	const [currentDueDate, setCurrentDueDate] = useState<Date>();
@@ -9,13 +11,40 @@ function App() {
 	const [weekdayError, setWeekdayError] = useState(false);
 	const [holidayError, setHolidayError] = useState(false);
 
-	useEffect(() => {
-		// for testing and using the application you can adjust the date below to desired date and time
-		console.warn(
-			'Due Date:',
-			calculateDueDate(new Date('May 24, 2023 9:15:05'), 8)
+	const [year, setYear] = useState<number>(2023);
+	const [month, setMonth] = useState(2);
+	const [day, setDay] = useState(26);
+	const [hour, setHour] = useState(10);
+	const [minutes, setMinutes] = useState(30);
+	const [userTurnAround, setUserTurnAround] = useState(8);
+	const [amPm, setAmPm] = useState<'AM' | 'PM'>('AM');
+
+	const validateUserDateTime = (
+		userYear: number,
+		userMonth: number,
+		userDay: number,
+		userHour: number,
+		userMinutes: number,
+		userAmPm: string
+	) => {
+		if (userYear < 1970) return;
+		if (userMonth < 1 || userMonth > 12) return;
+		if (userDay < 1 || userDay > 31) return;
+		if (userHour < 1 || userHour > 12) return;
+		if (userMinutes < 0 || userMinutes > 59) return;
+		if (userTurnAround < 1) return;
+
+		calculateDueDate(
+			new Date(
+				userYear,
+				userMonth - 1,
+				userDay,
+				userAmPm === 'PM' ? userHour + 12 : userHour,
+				userMinutes
+			),
+			userTurnAround
 		);
-	}, []);
+	};
 
 	const calculateDueDate = (
 		submitDate: Date = new Date(),
@@ -178,8 +207,120 @@ function App() {
 
 	return (
 		<div className='App'>
-			<div>This project does not interact with the user interface.</div>
 			<Clock />
+			<Divider />
+			<div className='input-div turn-around-hours'>
+				<label className='date-time-label' htmlFor='user-turn-around-hours'>
+					Turn Around Hours
+				</label>
+				<input
+					className='date-time-input'
+					id='user-turn-around-hours'
+					type='number'
+					placeholder='8'
+					min='1'
+					value={userTurnAround}
+					onChange={(e) => setUserTurnAround(Number(e.target.value))}
+				/>
+			</div>
+			<Divider />
+			<div className='date-time-fields'>
+				<div className='date-fields'>
+					<div className='input-div year'>
+						<label className='date-time-label' htmlFor='user-year'>
+							Year
+						</label>
+						<input
+							className='date-time-input'
+							id='user-year'
+							type='number'
+							placeholder='2023'
+							min='1970'
+							value={year}
+							onChange={(e) => setYear(Number(e.target.value))}
+						/>
+					</div>
+					<div className='input-div month'>
+						<label className='date-time-label' htmlFor='user-month'>
+							Month
+						</label>
+						<input
+							className='date-time-input'
+							id='user-month'
+							type='number'
+							placeholder='02'
+							min='1'
+							max='12'
+							value={month}
+							onChange={(e) => setMonth(Number(e.target.value))}
+						/>
+					</div>
+					<div className='input-div day'>
+						<label className='date-time-label' htmlFor='user-day'>
+							Day
+						</label>
+						<input
+							className='date-time-input'
+							id='user-day'
+							type='number'
+							placeholder='26'
+							min='1'
+							max='31'
+							value={day}
+							onChange={(e) => setDay(Number(e.target.value))}
+						/>
+					</div>
+				</div>
+				<div className='time-fields'>
+					<div className='input-div hour'>
+						<label className='date-time-label' htmlFor='user-hour'>
+							Hour
+						</label>
+						<input
+							className='date-time-input'
+							id='user-hour'
+							type='number'
+							placeholder='10'
+							min='1'
+							max='12'
+							value={hour}
+							onChange={(e) => setHour(Number(e.target.value))}
+						/>
+					</div>
+					<div className='input-div minutes'>
+						<label className='date-time-label' htmlFor='user-minutes'>
+							Minutes
+						</label>
+						<input
+							className='date-time-input'
+							id='user-minutes'
+							type='number'
+							placeholder='30'
+							min='0'
+							max='59'
+							value={minutes}
+							onChange={(e) => setMinutes(Number(e.target.value))}
+						/>
+					</div>
+					<Dropdown setAmPm={setAmPm} morningNight={amPm} />
+				</div>
+				<div
+					className='time-now'
+					onClick={() =>
+						validateUserDateTime(year, month, day, hour, minutes, amPm)
+					}
+				>
+					Submit Time
+				</div>
+			</div>
+			<div className='or-line'>
+				<div className='or'>OR</div>
+			</div>
+			<div className='time-now' onClick={() => calculateDueDate(new Date(), 8)}>
+				Use Current Time
+			</div>
+			<Divider />
+
 			{currentDueDate && (
 				<div className='due-date'>
 					Due Date: {currentDueDate.toDateString()} at{' '}
